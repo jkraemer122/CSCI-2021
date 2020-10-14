@@ -1,0 +1,12 @@
+insert code
+insert blocks
+insert python
+insert Kanye
+print
+get 3
+get 6
+contains block
+contains blocks
+clear
+print
+exit

@@ -1,0 +1,178 @@
+                           __________________
+
+                            LAB 05 QUESTIONS
+                           __________________
+
+
+- Name: (FILL THIS in)
+- NetID: (THE kauf0095 IN kauf0095@umn.edu)
+
+Answer the questions below according to the lab specification. Write
+your answers directly in this text file and submit it to complete the
+lab.
+
+
+PROBLEM 1: C Bit Operations in Collatz
+======================================
+
+  Examine the program collatz.c which performs a similar computation to
+  a Lab01 code except that this version uses bitwise operations in the
+  function collatz_bitwise().  Examine the locations labeled with
+  comments and shown below and describe the equivalent "normal"
+  arithmetic that is happening at each postion.
+
+
+A
+~
+
+  ,----
+  |   int neg_mask = 0x1 << 31;     // A
+  |   if(n & neg_mask){             // A
+  |     return -1;
+  |   }
+  `----
+	~~ neg_mask is being set to 0x1 and then shifting the 1 31 places to the left,
+	making it negative. It then checks to see if n and neg_mask are will return a 1
+	by using AND ~~
+
+B
+~
+
+  ,----
+  |     if(n & 0x1){                // B
+  |       ...
+  |     }
+  |     else{
+  |       ...
+  |     }
+  `----
+	~~ tests if n & 0x1 will return 1 or 0, odd or even basically
+
+C
+~
+
+  ,----
+  |       n = ((n << 2) - n) + 1;   // C
+  `----
+	~~ Setting n two to the left, basically multiply by 4, then subtracts by original n
+	then adds 1 to the bits. n = n*3 + 1
+
+D
+~
+
+  ,----
+  |       n = n >> 1;               // D
+  `----
+	~~ shifting n to the right by one, equivalent to n / 2
+
+PROBLEM 2: C Union and Float Bits
+=================================
+
+A
+~
+
+  Compile and run union.c to see what floating point value is printed by
+  the lines.
+  ,----
+  |   flint.in = 0xC378C000;        // assign an int value
+  |   printf("%.4f\n",flint.fl);    // print as a float value
+  `----
+  Show the float value and explain why it has a well-defined value
+  despite no assignment of `flint.fl = ...;' appearing.
+
+	~~ -248.7500, it didn't need to be assigned  because it is a struct and had an int
+	component and a float component to the flint structure. The flint_t just had to be 
+	initialized
+
+B
+~
+
+  The subsequent loop
+  ,----
+  |   flint.in = 0xC378C000;        // assign an int value
+  |   ...
+  |   for(int i=0; i<4; i++){       // print chars individually
+  |     unsigned char c = flint.ch[i];
+  |     printf("%d: %02x '%c'\n", i,c,c);
+  |   }
+  `----
+  prints values of the bytes associated with `flint' as chars and
+  hexadecimal numbers.  Show its output and explain why the hex digits
+  appear in a different order from the constant flint is set to
+  initially.
+
+	~~ 0: 00 ''
+	   1: c0 '▒'
+	   2: 78 'x'
+	   3: c3 '▒'
+	   
+	It is i a different order because it is a little endian machine, taking the 
+	smaller bits first and then adding in the rest.
+
+
+C
+~
+
+  The lines
+  ,----
+  | int mask = ~(0x80000000);
+  | flint.in = flint.in & mask;
+  | printf("%.4f\n",flint.fl);
+  `----
+  modify flint again. Show the resulting floating point output and
+  describe why it has the shown value.
+
+	~~ 1.069068e-38
+00746942 7629122
+0: 42 'B'
+1: 69 'i'
+2: 74 't'
+3: 00 ''
+
+
+PROBLEM 3: GDB
+==============
+
+A debug_scramble.c
+~~~~~~~~~~~~~~~~~~
+
+  The file debug_scramble.c has a short problem which requires the
+  correct number to be given as a command line argument. An array is
+  filled with values and then scrambled. The command line must
+  correspond to the "positive" response. Due to the array scrambling it
+  is not apparent from the source code which array location contains the
+  positive response.
+
+  Use the debugger to determine the location the positive response.  For
+  each of the steps below, write the commands to issue to do the items
+  listed.
+  1. Compile debug_scramble.c with debug symbols turned on
+  2. Start gdb with the resulting program
+  3. Set the arguments of the program to just 0
+  4. Set a breakpoint at a line in debug_scramble.c after the scramble
+     loop
+  5. Run the program
+  6. Print out the array after stopping at the breakpoint
+  7. Locate the positive response
+  8. Change the program arguments so that it is the correct index
+  9. Re-run the program and continue to the end
+
+
+B debug_long.c
+~~~~~~~~~~~~~~
+
+  The file debug_long.c has another short debugging problem.  It
+  requires an input string which is interpreted similarly to a
+  demonstration code at the top of code.  The correct input will elicit
+  the affirmative response.
+
+  To determine the correct input take the following approach.
+  1. Break after setting the variable `lng' to its large, mysterious
+     value
+  2. Print the bytes of long NOT as a number but interpreted as an array
+     of characters (string). This can be done in `gdb' by coercing the
+     types as in:
+     ,----
+     | print (char []) varname
+     `----
+  3. This should shed light on the correct input.

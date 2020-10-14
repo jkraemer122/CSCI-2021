@@ -1,0 +1,292 @@
+                           __________________
+
+                            LAB 13 QUESTIONS
+                           __________________
+
+
+- Name: Jack Kraemer
+- NetID: kraem098
+
+Answer the questions below according to the lab specification. Write
+your answers directly in this text file and submit it to complete the
+lab.
+
+
+PROBLEM 1: Virtual Memory and pmap
+==================================
+
+(A) memory_parts memory areas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Examine the source code for the provided `memory_parts.c'
+  program. Identify what region of program memory you expect the
+  following variables to be allocated into:
+  - global_arr[]
+  - local_arr[]
+  - malloc_arr
+
+
+~~~~~~~~~~~~~~~~~~~
+global_arr[] is allocated into global memory
+local_arr[] associated with main memory and is on the function call to the stack
+malloc_arr is on the stack but the array it's pointing to is on the heap
+
+(B) Running memory_parts and pmap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Compile the `memory_parts' using the provided Makefile.
+  ,----
+  | > make memory_parts
+  `----
+  Run the program and note that it prints several pieces of information
+  - The addresses of several of the variables allocated
+  - Its Process ID (PID) which is a unique number used to identify the
+    running program. This is an integer.
+  For example, the output might be
+  ,----
+  | > ./memory-parts
+  | 0x55dc6442c98a : main()
+  | 0x55dc6462d0c0 : global_arr
+  | 0x7ffc7f3e0310 : local_arr
+  | 0x55dc652ad260 : malloc_arr
+  | 0x7f53c5280000 : mmap'd file
+  | my pid is 11160
+  | press any key to continue
+  `----
+  so the programs PID is 11160
+
+  The program will also stop at this point until a key is pressed. DO
+  NOT PRESS A KEY YET.
+
+  Open another terminal and type the following command in that new
+  terminal.
+  ,----
+  | > pmap THE-PID-NUMBER-THAT-WAS-PRINTED-EARLIER
+  `----
+
+  Paste the output of pmap below.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+56:   ./memory_parts
+0000600000000000      8K rw---   [ anon ]
+00007f3ec7e00000   1948K r-x-- libc-2.27.so
+00007f3ec7fe7000     36K ----- libc-2.27.so
+00007f3ec7ff0000   2012K ----- libc-2.27.so
+00007f3ec81e7000     16K r---- libc-2.27.so
+00007f3ec81eb000      8K rw--- libc-2.27.so
+00007f3ec81ed000     16K rw---   [ anon ]
+00007f3ec8200000    152K r-x-- ld-2.27.so
+00007f3ec8226000      4K r-x-- ld-2.27.so
+00007f3ec8427000      4K r---- ld-2.27.so
+00007f3ec8428000      4K rw--- ld-2.27.so
+00007f3ec8429000      4K rw---   [ anon ]
+00007f3ec84d0000      8K rw---   [ anon ]
+00007f3ec84dc000      4K r---- gettysburg.txt
+00007f3ec8600000      4K r-x-- memory_parts
+00007f3ec8801000      4K r---- memory_parts
+00007f3ec8802000      4K rw--- memory_parts
+00007f3ec8803000      4K rw---   [ anon ]
+00007fffd3f30000    132K rw---   [ anon ]
+00007fffdbbb3000   8192K rw---   [ anon ]
+00007fffdc9ad000      4K r-x--   [ anon ]
+ total            12568K
+
+(C) Program Addresses vs Mapped Addresses
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  pmap prints out the virtual address space table for the program. The
+  leftmost column is a virtual address mapped by the OS for the program
+  to some physical location.  The next column is the size of the area of
+  memory associated with that starting address. The 3rd column contains
+  permissions of the program has for the memory area: r for read, w for
+  read, x for execute. The final column is contains any identifying
+  information about the memory area that pmap can discern.
+
+  Compare the addresses of variables and functions from the paused
+  program to the output. Try to determine the virtual address space in
+  which each variable resides and what region of program memory that
+  virtual address must belong to (stack, heap, globals, text).  In some
+  cases, the identifying information provided by pmap may make this
+  obvious.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+
+main()		text		0x7f3ec8600000		00007f3ec8600000	4K r-x-- memory_parts
+global_arr	globals 	0x7f3ec8802000		00007f3ec8802000	4K rw--  memory_parts
+local_arr	stack		
+
+
+(D) Min Size of Mapped Areas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  The minimum size of any virtual area of memory appears to be 4K. Why
+  is this the case?
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+memory pages in many systems is 4K and 1 page is the minimum amount of memory that is 
+mappable
+
+
+(E) Additional Observations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Notice that in addition to the "normal" variables that are mapped,
+  there is also an entry for the mmap()'d file 'gettysburg.txt' in the
+  virtual address table.  The mmap() function is explored in the next
+  problem but note its calling sequence which involves use of a couple
+  system calls:
+  1. `open()' which is a low level file opening call which returns a
+     numeric file descriptor.
+  2. `fstat()' which obtains information such as size for an open file
+     based on its numeric file descriptor. The `stat()' system call was
+     explored earlier in the class and does the same thing provided the
+     name of a file.
+
+  Finally there are additional calls to mmap() which allocate memory to
+  the program at a specific virtual address. Similar code to this is
+  often used to allocate and expand the heap area of memory for programs
+  in implementations of malloc().
+
+
+PROBLEM 2: mmap() and binary files
+==================================
+
+  This problem walks through the program `print_department.c' which
+  parses a binary file and prints part of its contents.  `mmap()' is
+  used to provide a convenient view of the file as a raw byte
+  sequence. The questions below will guide you through understanding
+  this program.
+
+  Compile and run the `print_departments' program to produce output that
+  looks like the following.
+
+  ,----
+  | > make print_department 
+  | gcc -Wall -g -Og -o print_department print_department.c		
+  | 
+  | > print_department
+  | usage: print_department <file.dat> <department>
+  |   department is one of
+  |   CS : computer science department
+  |   EE : electrical engineering department
+  |   IT : information technology department
+  | 
+  | > file cse_depts.dat 
+  | cse_depts.dat: data
+  | 
+  | > print_department cse_depts.dat CS
+  | Dept Name: CS Offset: 104
+  | Dept Name: EE Offset: 2152
+  | Dept Name: IT Offset: 3688
+  | 
+  | 8 Contacts for CS department
+  | Arindam Banerjee <baner029@umn.edu>
+  | Daniel Boley <boley@umn.edu>
+  | Abhishek Chandra <chandra@umn.edu>
+  | David Hung-Chang Du <du@umn.edu>
+  | Maria Gini <gini@umn.edu>
+  | Stephen Guy <sjguy@umn.edu>
+  | Tian He <tianhe@umn.edu>
+  | Mats Heimdahl <heimdahl@umn.edu>
+  `----
+
+  Answer the following questions to show you understand how this program
+  works.
+
+
+(A) Descriptive Comments of Binary Layout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Examine the comments at the top of the `print_department.c'
+  program. Below, paste the description of the binary "department
+  directory" structure or describe it in your own words. Make sure to
+  include which information/structs appear first and how the sizes of
+  parts of the file appear earlier.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The structure of the binary file is as follows.
+
+   1. file_header_t struct
+      - inital identifying bytes which should be {0xDE,'D','I','R'}
+      - size of following array of dept_offset_t array
+   2. array of dept_offset_t structs
+      - dept_code, offset, and num_contacts
+      - length of this array is given in initial file_header_t
+      - contains field offset which is bytes at which contacts for an
+        associated department start
+   3. array of contact_t structs
+      - name and email fields
+      - array is arranged by department
+      - array of dept_offset_t structs indicate where each department starts
+        and how many contacts are in it
+
+(B) Casting mmap()'d bytes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  The initial setup of the program uses `mmap()' to assign a pointer to
+  variable `char *file_bytes'.  This pointer will refer directly to the
+  bytes of the binary file.
+
+  Examine the lines
+  ,----
+  |   ////////////////////////////////////////////////////////////////////////////////
+  |   // CHECK the file_header_t struct for integrity, size of department array
+  |   file_header_t *header = (file_header_t *) file_bytes; // binary header struct is first thing in the file
+  `----
+
+  Explain what is happening here: what value will the variable `header'
+  get and how is it used in subsequent lines.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+'header' and 'file_byte' are assigned in the same place of memory. This
+location in memory can be interpreted as a 'file_header_t' struct. 
+Using that to check teh first bytes for the sequence '{0xDE, 'D', 'I', 'R'}'
+and extracts number of departments into the 'num_depts' variable
+
+(C) Pointer Arithmetic in Byte Arrays
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  After finishing with the file header, the next section of the program
+  begins with the following.
+  ,----
+  |   ////////////////////////////////////////////////////////////////////////////////
+  |   // SEARCH the array of department offsets for the department named
+  |   // on the command line
+  | 
+  |   dept_offset_t *offsets =           // after file header, array of dept_offset_t structures
+  |     (dept_offset_t *) (file_bytes + sizeof(file_header_t));
+  | 
+  `----
+
+  Explain what value the `offsets_arr' variable is assigned and how it
+  is used in the remainder of the SEARCH section.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+'offsets_arr' is assigned to the position after file_header_t. It thinks of that
+area as an array of 'dept_offset_t' structs wwith length 'num_depts'. The array is 
+printing the department code and byte offset of the department's contacts. If the command line and department 
+match, then the file offset is recorded into the variable offset.
+
+
+(D) Final Program Phase
+~~~~~~~~~~~~~~~~~~~~~~~
+
+  The final phase of the program begins below
+  ,----
+  |   ////////////////////////////////////////////////////////////////////////////////
+  |   // PRINT out all personnel in the specified department
+  |   ...
+  |   contact_t *dept_contacts = (contact_t *) (file_bytes + offset);
+  `----
+  Describe what value `dept_contacts' is assigned and how the final
+  phase uses it.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+'dept_contacts' is assigned to the byte position in the earlier lines. The file_bytes plus the offset
+and the area is looked at as a contact_t array. Each contact is printed.
